@@ -1,4 +1,4 @@
-from concurrent.futures import FIRST_COMPLETED
+from concurrent.futures import FIRST_COMPLETED, ALL_COMPLETED
 from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import wait
@@ -93,6 +93,10 @@ def _optimize(
                         break
 
                     if n_trials is not None and n_submitted_trials >= n_trials:
+                        # we have to wait for all futures to finish before breaking out
+                        completed, _ = wait(futures, return_when=ALL_COMPLETED)
+                        for f in completed:
+                            progress_bar.update(0.0)
                         break
 
                     if len(futures) >= n_jobs:
@@ -114,7 +118,7 @@ def _optimize(
                             gc_after_trial,
                             True,
                             time_start,
-                            None,
+                            None,  # don't pass pbar reference to a thread
                         )
                     )
     finally:
